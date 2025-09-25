@@ -58,10 +58,6 @@ These instructions will get you a copy of the project up and running on your loc
 2.  **Set up the database:**
 
     This project uses YugabyteDB. You can use Docker or yugabyted to run a local instance.
-
-    ```bash
-    docker run -d --name yugabytedb -p 7000:7000 -p 9000:9000 -p 5433:5433 yugabytedb/yugabytedb:latest bin/yugabyted start --daemon=false
-    ```
     You can find detailed instructions [here](https://docs.yugabyte.com/stable/reference/configuration/yugabyted/) for running YugabyteDB using yugabyted.
 
 3.  **Configure the application:**
@@ -74,11 +70,6 @@ These instructions will get you a copy of the project up and running on your loc
         url: jdbc:postgresql://localhost:5433/yugabyte
         username: yugabyte
         password: yugabyte
-      jpa:
-        hibernate:
-          ddl-auto: none
-      flyway:
-        enabled: true
     GEMINI_API_KEY: <GEMINI_API_KEY>
     ```
 
