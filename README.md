@@ -29,13 +29,13 @@ The heart of this application is the `predictFlightDelay` agentic action. When i
 
 ## Why YugabyteDB?
 
-For the database, we have chosen YugabyteDB, a high-performance, distributed SQL database that is PostgreSQL-compatible. YugabyteDB offers several key advantages for this project:
+A high-performance, distributed SQL database that is PostgreSQL-compatible. YugabyteDB offers several key advantages for this example project:
 
 *   **Scalability and Resilience:** YugabyteDB is a distributed database, which means it can scale horizontally to handle large volumes of data and high-throughput workloads. Its distributed nature also provides high availability and resilience, ensuring that the application remains operational even in the event of a node failure.
 
-*   **PostgreSQL Compatibility:** YugabyteDB is wire-compatible with PostgreSQL, which means we can use the same drivers, tools, and libraries that we would use with PostgreSQL. This makes it easy to integrate with our Spring Boot application and allows us to leverage the rich ecosystem of PostgreSQL tools and extensions.
+*   **PostgreSQL Compatibility:** YugabyteDB is runtime compatible with PostgreSQL, which means we can use the same drivers, tools, and libraries that we would use with PostgreSQL. This makes it easy to integrate with the Spring Boot application and allows us to leverage the rich ecosystem of PostgreSQL tools and extensions.
 
-*   **Support for Vector Embeddings:** YugabyteDB supports the `pgvector` extension, which allows us to store and query vector embeddings directly in the database. This is a critical feature for our AI agent, as it enables us to perform efficient similarity searches on our flight data, leading to more accurate predictions.
+*   **Support for Vector Embeddings:** YugabyteDB supports the `pgvector` extension, which allows us to store and query vector embeddings directly in the database. This is a critical feature for AI agents, as it enables agents to perform efficient similarity searches on the flight data, leading to more accurate predictions.
 
 ## Getting Started
 
@@ -52,12 +52,12 @@ These instructions will get you a copy of the project up and running on your loc
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/flight-predict.git
+    git clone https://github.com/srinivasa-vasu/flight-delay-copilot.git
     ```
 
 2.  **Set up the database:**
 
-    This project uses YugabyteDB. You can use Docker to run a local instance or yugabyted.
+    This project uses YugabyteDB. You can use Docker or yugabyted to run a local instance.
 
     ```bash
     docker run -d --name yugabytedb -p 7000:7000 -p 9000:9000 -p 5433:5433 yugabytedb/yugabytedb:latest bin/yugabyted start --daemon=false

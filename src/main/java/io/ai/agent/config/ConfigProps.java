@@ -44,6 +44,9 @@ public class ConfigProps {
 			else if (resource.equals(prompt.getCritiquePath())) {
 				prompt.setCritiquePrompt(content);
 			}
+			else if (resource.equals(prompt.rankedKPath)) {
+				prompt.setRankedKPrompt(content);
+			}
 			else {
 				// do nothing
 			}
@@ -78,13 +81,16 @@ public class ConfigProps {
 		private String critiquePrompt;
 		@Setter(AccessLevel.PRIVATE)
 		private String weatherPrompt;
+		@Setter(AccessLevel.PRIVATE)
+		private String rankedKPrompt;
 		private String analystPath;
 		private String leadAnalystPath;
 		private String critiquePath;
 		private String weatherPath;
+		private String rankedKPath;
 
 		private String[] getResources() {
-			return new String[] {analystPath, critiquePath, leadAnalystPath, weatherPath};
+			return new String[] {analystPath, critiquePath, leadAnalystPath, weatherPath, rankedKPath};
 		}
 	}
 

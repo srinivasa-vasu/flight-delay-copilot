@@ -63,7 +63,8 @@ public record WeatherRecord(
 			String weatherCode,
 			String visibility,
 			String windDirection,
-			String conditions
+			String conditions,
+			boolean severeWeather
 	) { }
 
 	public record HourlyWeather(
@@ -78,6 +79,7 @@ public record WeatherRecord(
 			List<Integer> weatherCode,
 			List<Double> visibility,
 			List<String> windDirection,
-			List<String> conditions
+			List<String> conditions,
+			boolean severeWeather
 	) { }
 }

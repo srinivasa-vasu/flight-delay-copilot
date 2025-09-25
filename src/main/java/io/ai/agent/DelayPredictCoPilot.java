@@ -115,7 +115,7 @@ public class DelayPredictCoPilot {
 		}
 
 		List<ScoredDocument> scoredDocuments = docs.documents().parallelStream().map(doc -> {
-			String prompt = String.format("On a scale of 1 to 10, how relevant is this document for predicting delays for a flight from %s to %s on %s?\n\nDOCUMENT:\n%s",
+			String prompt = String.format(props.getPrompt().getRankedKPrompt(),
 					request.origin(), request.destination(), request.travelDate(), doc.getText());
 
 			try {
@@ -124,15 +124,13 @@ public class DelayPredictCoPilot {
 			}
 			catch (Exception e) {
 				log.warn("Failed to get relevance score for document: {}", e.getMessage());
-				return new ScoredDocument(doc, 0); // Score 0 if LLM fails
+				return new ScoredDocument(doc, 0);
 			}
 		}).toList();
 
-		// Sort by score descending
 		List<ScoredDocument> sortedDocuments = new ArrayList<>(scoredDocuments);
 		sortedDocuments.sort((a, b) -> Integer.compare(b.score(), a.score()));
 
-		// Return the top N documents, making it configurable would be a good improvement
 		return FlightDocs.builder().documents(sortedDocuments.stream()
 				.limit(props.getVector().getRankedK())
 				.map(ScoredDocument::document)
@@ -150,6 +148,7 @@ public class DelayPredictCoPilot {
 		}
 		catch (Exception e) {
 			log.error("Error getting weather data", e);
+			// example fallback
 			return WeatherAnalysis.builder().build();
 		}
 	}
@@ -198,7 +197,7 @@ public class DelayPredictCoPilot {
 			PredictionDetails initialDetails = initialPrediction(request, airline, flightAuxStats, weatherAnalysis, ragContext, ctx);
 			// 2. Skeptic critiques the analysis
 			Critique critique = reviewPrediction(initialDetails, request, flightAuxStats, weatherAnalysis, ragContext, ctx);
-			// 3. Judge produces the final prediction based on the critique
+			// 3. Lead analyst produces the final prediction based on the critique
 			PredictionDetails finalDetails = finalPrediction(initialDetails, critique, ctx);
 			predictions.add(finalDetails.toAirlinePrediction(schedule));
 		});
@@ -236,13 +235,13 @@ public class DelayPredictCoPilot {
 			if (details != null) {
 				return details;
 			}
-			log.warn("Primary prediction failed, falling back to statistical model.");
+			log.warn("Initial prediction failed, falling back to statistical model.");
 		}
 		catch (Exception e) {
-			log.error("Error getting LLM prediction, falling back to statistical model", e);
+			log.error("Error getting initial prediction, falling back to statistical model", e);
 		}
 
-		// Fallback to statistical prediction
+		// Fallback to statistical prediction (real world implementation considers more aspects)
 		CrewAnalysis crewAnalysis = crewService.crewAvailability(airline, request.travelDate());
 		return statsPredictionService.createStatisticalPrediction(airline, flightAuxStats, weatherAnalysis, crewAnalysis);
 	}
@@ -291,7 +290,7 @@ public class DelayPredictCoPilot {
 				log.info("Final prediction generated after review.");
 				return finalDetails;
 			}
-			log.warn("Judge agent failed to produce a final prediction. Returning initial prediction.");
+			log.warn("Lead analyst agent failed to produce a final prediction. Returning initial prediction.");
 		}
 		catch (Exception e) {
 			log.error("Error during final prediction step.", e);

@@ -12,8 +12,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://127.0.0.2:5433/flight_pilot
-    username: yugabyte
-    password: yugabyte
+    username: username
+    password: password
 
 prediction:
   retry-attempts: 3
@@ -34,6 +34,7 @@ prediction:
     critique-path: templates/critique.conf
     lead-analyst-path: templates/lead-analyst.conf
     weather-path: templates/weather.conf
+    ranked-k-path: templates/ranked.conf
   history-period-months: 3
 
 embabel:

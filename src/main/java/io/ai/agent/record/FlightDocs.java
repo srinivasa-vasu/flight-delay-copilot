@@ -9,5 +9,4 @@ import org.springframework.ai.document.Document;
 @Builder
 @Jacksonized
 public record FlightDocs(List<Document> documents) {
-
 }

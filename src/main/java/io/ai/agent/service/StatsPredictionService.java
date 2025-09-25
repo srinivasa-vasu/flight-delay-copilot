@@ -32,7 +32,7 @@ public class StatsPredictionService {
 				"Route complexity"
 		));
 
-		if (weatherAnalysis != null && weatherAnalysis.isSevereWeather()) {
+		if (weatherAnalysis != null && weatherAnalysis.severe()) {
 			delayProbability += 10; // Increase delay probability by 10% for severe weather
 			riskFactors.add("Severe weather conditions");
 		}
