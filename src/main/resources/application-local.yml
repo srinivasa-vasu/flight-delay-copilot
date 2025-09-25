@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: flight-delay-copilot
+  ai:
+    mcp:
+      server:
+        type: SYNC  # or ASYNC
+        annotation-scanner:
+          enabled: true
+        name: flight-delay-copilot
+        protocol: streamable
+
+  datasource:
+    url: jdbc:postgresql://127.0.0.2:5433/flight_delay
+    username: yugabyte
+    password: yugabyte
+#    hikari:
+#      minimum-idle: 2
+#      maximum-pool-size: 2
+#      auto-commit: false
+#      keepalive-time: 30000
+#      connection-init-sql: "set yb_silence_advisory_locks_not_supported_error=on; set search_path=stodo,public; prepare warmup as SELECT 1; execute warmup; commit;"
+#      connection-timeout: 5000
+#      data-source-properties:
+#        ApplicationName: flight-delay-agent
+#        #        socketTimeout: 15
+#        yb-servers-refresh-interval: 180
+#      max-lifetime: 60000
+
+#    driver-class-name: com.yugabyte.Driver
+
+prediction:
+  retry-attempts: 3
+  confidence-score: 75.0
+  delay-limit: 3
+  delay-minutes: 60
+  acceptable-delay-minutes: 15
+  vector:
+    batch-size: 1000
+    dimension: 768
+    schema: public
+    table: flight_embeddings
+    similarity-threshold: 0.7
+    top-k: 5
+    ranked-k: 2
+  prompt:
+    analyst-path: templates/analyst.conf
+    critique-path: templates/critique.conf
+    lead-analyst-path: templates/lead-analyst.conf
+    weather-path: templates/weather.conf
+  history-period-months: 3
+
+embabel:
+  models:
+    default-llm: openai/chat/geminilite
+    default-embedding-model: ai/embeddinggemma:latest
+    embedding-services:
+      lite: ai/embeddinggemma
+      best: openai/embedding/gemini
+    llms:
+      best: openai/chat/gemini
+      lite: openai/chat/geminilite
+  agent:
+    platform:
+      llm-operations:
+        data-binding:
+          max-attempts: 2
+      #  agent-platform:
+      ranking:
+        llm: openai/chat/geminilite
+        max-attempts: 2
+      models:
+        openai:
+          max-attempts: 2
+  llm-operations:
+    data-binding:
+      max-attempts: 2
+
+logging:
+  level:
+    #    io:
+    #      modelcontextprotocol:
+    #        client: DEBUG
+    #        spec: DEBUG
+    org:
+      springframework:
+        ai:
+          chat:
+            client:
+              advisor: DEBUG
+  threshold:
+    console: TRACE
+

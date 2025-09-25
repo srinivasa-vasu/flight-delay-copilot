@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Flight Delay Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&family=Open+Sans:wght@300;400&display=swap"
+          rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .search-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group select {
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group-full {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 40px;
+        }
+
+        .airline-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .airline-card:hover {
+            transform: translateX(10px);
+        }
+
+        .airline-card.best {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .airline-card.moderate {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .airline-card.poor {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .rank-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .airline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .airline-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .delay-probability {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .probability-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .probability-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .probability-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .risk-factors {
+            margin-top: 15px;
+        }
+
+        .risk-factors h4 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .risk-factor {
+            display: inline-block;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .recommendation {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .recommendation-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .banner {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+            text-transform: uppercase;
+        }
+
+        .schedule-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .schedule-table th, .schedule-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .schedule-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const API_BASE_URL = 'http://localhost:8080/api/v1';
+
+    function FlightDelayPredictor() {
+        const [airports, setAirports] = React.useState([]);
+        const [origin, setOrigin] = React.useState('');
+        const [destination, setDestination] = React.useState('');
+        const [travelDate, setTravelDate] = React.useState('');
+        const [travelTime, setTravelTime] = React.useState('');
+        const [predictions, setPredictions] = React.useState(null);
+        const [loading, setLoading] = React.useState(false);
+        const [error, setError] = React.useState(null);
+        const [showNoResultsBanner, setShowNoResultsBanner] = React.useState(false);
+        const [noResultsMessage, setNoResultsMessage] = React.useState('');
+
+        React.useEffect(() => {
+            loadAirports();
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            setTravelDate(tomorrow.toISOString().split('T')[0]);
+            setTravelTime('10:00');
+        }, []);
+
+        const loadAirports = async () => {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/airports`);
+                setAirports(response.data);
+                // Set default airports
+                if (response.data.length >= 2) {
+                    setOrigin(response.data[0].code);
+                    setDestination(response.data[1].code);
+                }
+            } catch (err) {
+                console.error('Failed to load airports:', err);
+                // Use fallback airports for demo
+                setAirports([
+                    {code: 'JFK', name: 'John F. Kennedy International', city: 'New York'},
+                    {code: 'LAX', name: 'Los Angeles International', city: 'Los Angeles'},
+                    {code: 'ORD', name: "O'Hare International", city: 'Chicago'},
+                    {code: 'ATL', name: 'Hartsfield-Jackson Atlanta International', city: 'Atlanta'},
+                    {code: 'DFW', name: 'Dallas Fort Worth International', city: 'Dallas'}
+                ]);
+                setOrigin('JFK');
+                setDestination('LAX');
+            }
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setError(null);
+            setPredictions(null);
+            setShowNoResultsBanner(false); // Reset banner on new search
+            setNoResultsMessage('');
+
+            try {
+                const requestBody = {
+                    origin: origin,
+                    destination: destination,
+                    travelDate: `${travelDate}T${travelTime}`
+                };
+                const response = await axios.post(`${API_BASE_URL}/predict`, requestBody);
+                if (response.data && response.data.predictions && response.data.predictions.length > 0) {
+                    setPredictions(response.data);
+                } else {
+                    setShowNoResultsBanner(true);
+                    setNoResultsMessage('No flight delay predictions found for the selected criteria. Please try different dates or routes.');
+                    setPredictions(null); // Ensure predictions are cleared
+                }
+            } catch (err) {
+                setError('Failed to get server-side predictions. Using client-side simulation.');
+                console.error(err);
+                // If the server-side call fails, use the client-side simulation as a backup
+                const response = await simulatePrediction();
+                setPredictions(response);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const simulatePrediction = () => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve({
+                        origin,
+                        destination,
+                        travelDate,
+                        predictions: [
+                            {
+                                airlineCode: 'DL',
+                                airlineName: 'Delta Air Lines',
+                                delayProbability: 18.5,
+                                expectedDelayMinutes: 12,
+                                confidenceScore: 92,
+                                riskFactors: ['Morning departure', 'Hub airport congestion', 'Historical pattern'],
+                                recommendation: 'Excellent choice. Delta shows strong on-time performance on this route with minimal delays expected.',
+                                historicalPerformance: {
+                                    averageDelay: 15.2,
+                                    onTimePercentage: 82.3,
+                                    totalFlights: 1250,
+                                    cancellationRate: 1.2
+                                },
+                                schedule: [
+                                    { flightNumber: 'DL456', scheduledDeparture: [2025, 9, 21, 10, 0, 0], scheduledArrival: [2025, 9, 21, 13, 0, 0], aircraftType: 'Boeing 737' },
+                                    { flightNumber: 'DL789', scheduledDeparture: [2025, 9, 21, 14, 30, 0], scheduledArrival: [2025, 9, 21, 17, 30, 0], aircraftType: 'Airbus A320' }
+                                ]
+                            },
+                            {
+                                airlineCode: 'AA',
+                                airlineName: 'American Airlines',
+                                delayProbability: 25.8,
+                                expectedDelayMinutes: 22,
+                                confidenceScore: 88,
+                                riskFactors: ['Aircraft turnaround time', 'Crew scheduling', 'Weather forecast'],
+                                recommendation: 'Good option with moderate delay risk. Consider arriving at airport early.',
+                                historicalPerformance: {
+                                    averageDelay: 22.3,
+                                    onTimePercentage: 78.5,
+                                    totalFlights: 980,
+                                    cancellationRate: 2.1
+                                },
+                                schedule: [
+                                    { flightNumber: 'AA123', scheduledDeparture: [2025, 9, 21, 9, 0, 0], scheduledArrival: [2025, 9, 21, 12, 0, 0], aircraftType: 'Boeing 777' }
+                                ]
+                            },
+                            {
+                                airlineCode: 'UA',
+                                airlineName: 'United Airlines',
+                                delayProbability: 32.5,
+                                expectedDelayMinutes: 35,
+                                confidenceScore: 85,
+                                riskFactors: ['Maintenance backlog', 'Connection complexity', 'Peak travel time'],
+                                recommendation: 'Higher delay risk. Consider alternative flights or build in buffer time.',
+                                historicalPerformance: {
+                                    averageDelay: 28.7,
+                                    onTimePercentage: 75.8,
+                                    totalFlights: 890,
+                                    cancellationRate: 3.2
+                                },
+                                schedule: []
+                            },
+                            {
+                                airlineCode: 'SW',
+                                airlineName: 'Southwest Airlines',
+                                delayProbability: 28.2,
+                                expectedDelayMinutes: 18,
+                                confidenceScore: 87,
+                                riskFactors: ['Quick turnaround schedule', 'Gate availability', 'Seasonal patterns'],
+                                recommendation: 'Reasonable performance expected. Southwest offers flexibility with no change fees.',
+                                historicalPerformance: {
+                                    averageDelay: 19.8,
+                                    onTimePercentage: 80.2,
+                                    totalFlights: 1450,
+                                    cancellationRate: 1.8
+                                },
+                                schedule: [
+                                    { flightNumber: 'SW456', scheduledDeparture: [2025, 9, 21, 11, 0, 0], scheduledArrival: [2025, 9, 21, 14, 0, 0], aircraftType: 'Boeing 737' }
+                                ]
+                            }
+                        ],
+                        generatedAt: new Date().toISOString()
+                    });
+                }, 2000);
+            });
+        };
+
+        const getCardClass = (probability) => {
+            if (probability <= 20) return 'best';
+            if (probability <= 35) return 'moderate';
+            return 'poor';
+        };
+
+        const formatDateTime = (dateTime) => {
+            if (!dateTime) return 'N/A';
+            let date;
+            if (Array.isArray(dateTime)) {
+                date = new Date(dateTime[0], dateTime[1] - 1, dateTime[2], dateTime[3], dateTime[4], dateTime[5]);
+            } else {
+                date = new Date(dateTime);
+            }
+            return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+        };
+
+        const calculateJourneyDuration = (start, end) => {
+            if (!start || !end) return 'N/A';
+            let startDate, endDate;
+            if (Array.isArray(start)) {
+                startDate = new Date(start[0], start[1] - 1, start[2], start[3], start[4], start[5]);
+            } else {
+                startDate = new Date(start);
+            }
+            if (Array.isArray(end)) {
+                endDate = new Date(end[0], end[1] - 1, end[2], end[3], end[4], end[5]);
+            } else {
+                endDate = new Date(end);
+            }
+
+            let diff = endDate.getTime() - startDate.getTime();
+            if (diff < 0) {
+                return 'Invalid';
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            diff -= hours * (1000 * 60 * 60);
+            const minutes = Math.floor(diff / (1000 * 60));
+
+            return `${hours}h ${minutes}m`;
+        };
+
+        return (
+            <div className="container">
+                <div className="header">
+                    <h1><i class="fas fa-plane"></i> Flight Search & Delay Predictor</h1>
+                    <p>Agent powered predictions using historical data and real-time factors</p>
+                </div>
+
+                <div className="card">
+                    <form onSubmit={handleSubmit} className="search-form">
+                        <div className="form-group">
+                            <label>Origin Airport</label>
+                            <select
+                                value={origin}
+                                onChange={(e) => setOrigin(e.target.value)}
+                                required
+                            >
+                                <option value="">Select origin</option>
+                                {airports.map(airport => (
+                                    <option key={airport.code} value={airport.code}>
+                                        {airport.code} - {airport.city}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Destination Airport</label>
+                            <select
+                                value={destination}
+                                onChange={(e) => setDestination(e.target.value)}
+                                required
+                            >
+                                <option value="">Select destination</option>
+                                {airports.filter(a => a.code !== origin).map(airport => (
+                                    <option key={airport.code} value={airport.code}>
+                                        {airport.code} - {airport.city}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Travel Date</label>
+                            <input
+                                type="date"
+                                value={travelDate}
+                                onChange={(e) => setTravelDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Travel Time</label>
+                            <input
+                                type="time"
+                                value={travelTime}
+                                onChange={(e) => setTravelTime(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="form-group-full">
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? 'Analyzing...' : 'Predict Delays'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {loading && (
+                    <div className="card">
+                        <div className="loading">
+                            <div className="spinner"></div>
+                            <p>Analyzing historical patterns and current conditions...</p>
+                        </div>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="card">
+                        <div className="error">{error}</div>
+                    </div>
+                )}
+
+                {showNoResultsBanner && !loading && (
+                    <div className="card">
+                        <div className="banner">
+                            {noResultsMessage}
+                        </div>
+                    </div>
+                )}
+
+                {predictions && !loading && (
+                    <div className="results">
+                        <div className="card">
+                            <h2>🎯 Delay Predictions for {origin} → {destination}</h2>
+                            <p style={{color: '#666', marginTop: '10px'}}>
+                                Travel Date: {new Date(travelDate).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                            </p>
+                        </div>
+
+                        {predictions.predictions.map((prediction, index) => (
+                            <div key={prediction.airlineCode}
+                                 className={`airline-card ${getCardClass(prediction.delayProbability)}`}>
+                                <div className="rank-badge">#{index + 1}</div>
+
+                                <div className="airline-header">
+                                    <div className="airline-name">
+                                        {prediction.airlineName || prediction.airlineCode}
+                                    </div>
+                                    <div className="delay-probability">
+                                        <div className="probability-circle">
+                                            <div
+                                                className="probability-value">{prediction.delayProbability != null ? `${prediction.delayProbability.toFixed(1)}%` : 'N/A'}</div>
+                                            <div className="probability-label">Delay Risk</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="metrics">
+                                    <div className="metric">
+                                        <div
+                                            className="metric-value">{prediction.expectedDelayMinutes != null ? `${prediction.expectedDelayMinutes} min` : 'N/A'}</div>
+                                        <div className="metric-label">Expected Delay</div>
+                                    </div>
+                                    <div className="metric">
+                                        <div
+                                            className="metric-value">{prediction.confidenceScore != null ? `${prediction.confidenceScore}%` : 'N/A'}</div>
+                                        <div className="metric-label">Confidence</div>
+                                    </div>
+                                    <div className="metric">
+                                        <div
+                                            className="metric-value">{prediction.historicalPerformance.onTimePercentage != null ? `${prediction.historicalPerformance.onTimePercentage.toFixed(1)}%` : 'N/A'}</div>
+                                        <div className="metric-label">On-Time Rate</div>
+                                    </div>
+                                    <div className="metric">
+                                        <div
+                                            className="metric-value">{prediction.historicalPerformance.cancellationRate != null ? `${prediction.historicalPerformance.cancellationRate.toFixed(1)}%` : 'N/A'}</div>
+                                        <div className="metric-label">Cancellation Rate</div>
+                                    </div>
+                                </div>
+
+                                {prediction.schedule && prediction.schedule.length > 0 && (
+                                    <div className="schedule">
+                                        <h4>Flight Schedule</h4>
+                                        <table className="schedule-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Flight No.</th>
+                                                    <th>Departure</th>
+                                                    <th>Arrival</th>
+                                                    <th>Duration</th>
+                                                    <th>Aircraft</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {prediction.schedule.map((flight, i) => (
+                                                    <tr key={i}>
+                                                        <td>{flight.flightNumber}</td>
+                                                        <td>{formatDateTime(flight.scheduledDeparture)}</td>
+                                                        <td>{formatDateTime(flight.scheduledArrival)}</td>
+                                                        <td>{calculateJourneyDuration(flight.scheduledDeparture, flight.scheduledArrival)}</td>
+                                                        <td>{flight.aircraftType}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+
+                                <div className="risk-factors">
+                                    <h4>Risk Factors</h4>
+                                    {prediction.riskFactors.map((factor, i) => (
+                                        <span key={i} className="risk-factor">{factor}</span>
+                                    ))}
+                                </div>
+
+                                <div className="recommendation">
+                                    <div className="recommendation-text">
+                                        💡 {prediction.recommendation}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {predictions.predictions.length}
+                                </div>
+                                <div className="stat-label">Airlines Analyzed</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {predictions.predictions[0].delayProbability.toFixed(1)}%
+                                </div>
+                                <div className="stat-label">Best Delay Rate</div>
+                            </div>
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {Math.round(predictions.predictions.reduce((acc, p) =>
+                                        acc + (p.historicalPerformance.totalFlights || 0), 0) / predictions.predictions.length)}
+                                </div>
+                                <div className="stat-label">Avg Flights Analyzed</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    ReactDOM.render(<FlightDelayPredictor/>, document.getElementById('root'));
+</script>
+</body>
+</html>
