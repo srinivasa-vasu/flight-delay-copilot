@@ -30,11 +30,11 @@ prediction:
     top-k: 5
     ranked-k: 2
   prompt:
-    analyst-path: templates/analyst.conf
-    critique-path: templates/critique.conf
-    lead-analyst-path: templates/lead-analyst.conf
-    weather-path: templates/weather.conf
-    ranked-k-path: templates/ranked.conf
+    analyst-path: classpath:templates/analyst.conf
+    critique-path: classpath:templates/critique.conf
+    lead-analyst-path: classpath:templates/lead-analyst.conf
+    weather-path: classpath:templates/weather.conf
+    ranked-k-path: classpath:templates/ranked.conf
   history-period-months: 3
 
 embabel:
