@@ -247,11 +247,10 @@ public class DelayPredictCoPilot {
 	private Critique reviewPrediction(PredictionDetails initialDetails, PredictionRequest request, FlightAuxStats flightAuxStats,
 			WeatherAnalysis weatherAnalysis, String ragContext, OperationContext ctx) {
 		try {
-			var predictionJson = objectMapper.writeValueAsString(initialDetails);
 			var critiquePrompt = String.format(props.getPrompt().getCritiquePrompt(),
 					request.origin(), request.destination(),
 					flightAuxStats.avgDelay(), flightAuxStats.onTimePercentage(), flightAuxStats.cancelRate(),
-					ragContext, weatherAnalysis, flightAuxStats.pastIncidents(), predictionJson);
+					ragContext, weatherAnalysis, flightAuxStats.pastIncidents(), objectMapper.writeValueAsString(initialDetails));
 
 			var critique = ctx.ai().withAutoLlm()
 					.withSystemPrompt(VIMANA_SKEPTIC.contribution())
@@ -275,10 +274,8 @@ public class DelayPredictCoPilot {
 		}
 
 		try {
-			var initialJson = objectMapper.writeValueAsString(initialDetails);
-			var critiqueJson = objectMapper.writeValueAsString(critique);
-
-			var finalPrompt = String.format(props.getPrompt().getLeadAnalystPrompt(), initialJson, critiqueJson);
+			var finalPrompt = String.format(props.getPrompt()
+					.getLeadAnalystPrompt(), objectMapper.writeValueAsString(initialDetails), objectMapper.writeValueAsString(critique));
 
 			var finalDetails = ctx.ai().withAutoLlm()
 					.withSystemPrompt(VIMANA_LEAD_ANALYST.contribution())
