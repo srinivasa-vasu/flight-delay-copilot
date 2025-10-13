@@ -14,7 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-@Table(name = "crew_schedules")
+@Table(name = "crew_schedule")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

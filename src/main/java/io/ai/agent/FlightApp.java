@@ -19,8 +19,8 @@ import org.springframework.web.filter.CorsFilter;
 })
 public class FlightApp {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FlightApp.class, args);
+	void main() {
+		SpringApplication.run(FlightApp.class);
 	}
 
 	@Bean

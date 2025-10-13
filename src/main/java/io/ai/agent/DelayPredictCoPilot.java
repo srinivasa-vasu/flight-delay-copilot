@@ -12,7 +12,6 @@ import io.ai.agent.entity.Airline;
 import io.ai.agent.entity.Flight;
 import io.ai.agent.entity.FlightStatus;
 import io.ai.agent.record.AirlinePrediction;
-import io.ai.agent.record.CrewAnalysis;
 import io.ai.agent.record.Critique;
 import io.ai.agent.record.FlightAuxStats;
 import io.ai.agent.record.FlightDocs;
@@ -34,7 +33,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -115,7 +113,7 @@ public class DelayPredictCoPilot {
 		}
 
 		List<ScoredDocument> scoredDocuments = docs.documents().parallelStream().map(doc -> {
-			String prompt = String.format(props.getPrompt().getRankedKPrompt(),
+			var prompt = String.format(props.getPrompt().getRankedKPrompt(),
 					request.origin(), request.destination(), request.travelDate(), doc.getText());
 
 			try {
@@ -128,7 +126,7 @@ public class DelayPredictCoPilot {
 			}
 		}).toList();
 
-		List<ScoredDocument> sortedDocuments = new ArrayList<>(scoredDocuments);
+		var sortedDocuments = new ArrayList<>(scoredDocuments);
 		sortedDocuments.sort((a, b) -> Integer.compare(b.score(), a.score()));
 
 		return FlightDocs.builder().documents(sortedDocuments.stream()
@@ -139,7 +137,7 @@ public class DelayPredictCoPilot {
 
 	@Action(description = "Get weather data")
 	public WeatherAnalysis weatherAnalysis(PredictionRequest request, OperationContext context) {
-		String weatherData = MessageFormat.format("{0}\n{1}",
+		var weatherData = MessageFormat.format("{0}\n{1}",
 				weatherService.getWeatherForecast(request.origin(), request.travelDate()),
 				weatherService.getWeatherForecast(request.destination(), request.travelDate()));
 		try {
@@ -159,7 +157,7 @@ public class DelayPredictCoPilot {
 		log.info("Predicting delays for route: {} to {}", request.origin(), request.destination());
 
 		// Fetch relevant historical data
-		List<Flight> historicalFlights = flightRepository.findByRoute(
+		var historicalFlights = flightRepository.findByRoute(
 				request.origin(),
 				request.destination(),
 				request.travelDate().toLocalDate().minusMonths(props.getHistoryPeriodMonths()).atStartOfDay(),
@@ -167,23 +165,23 @@ public class DelayPredictCoPilot {
 		);
 
 		// Fetch flight schedule for the given day
-		List<Flight> scheduledFlights = flightRepository.findByRouteAndDepartureDate(
+		var scheduledFlights = flightRepository.findByRouteAndDepartureDate(
 				request.origin(),
 				request.destination(),
 				request.travelDate().toLocalDate().atStartOfDay(),
 				request.travelDate().toLocalDate().atTime(23, 59, 59)
 		);
 
-		String ragContext = rogDocs.documents().stream()
+		var ragContext = rogDocs.documents().stream()
 				.map(Document::getText)
 				.collect(Collectors.joining("\n"));
 
 		// Prepare data for each airline
-		List<AirlinePrediction> predictions = new ArrayList<>();
-		Map<Airline, List<Flight>> flightsByAirline = historicalFlights.stream()
+		var predictions = new ArrayList<AirlinePrediction>();
+		var flightsByAirline = historicalFlights.stream()
 				.collect(Collectors.groupingBy(Flight::getAirline));
 
-		Map<Airline, List<Flight>> scheduleByAirline = scheduledFlights.stream()
+		var scheduleByAirline = scheduledFlights.stream()
 				.collect(Collectors.groupingBy(Flight::getAirline));
 
 		flightsByAirline.forEach((airline, airlineFlights) -> {
@@ -194,12 +192,12 @@ public class DelayPredictCoPilot {
 					.toList();
 
 			// 1. Initial analysis by the Analyst
-			PredictionDetails initialDetails = initialPrediction(request, airline, flightAuxStats, weatherAnalysis, ragContext, ctx);
+			var initialAnalysis = initialPrediction(request, airline, flightAuxStats, weatherAnalysis, ragContext, ctx);
 			// 2. Skeptic critiques the analysis
-			Critique critique = reviewPrediction(initialDetails, request, flightAuxStats, weatherAnalysis, ragContext, ctx);
+			var critique = reviewPrediction(initialAnalysis, request, flightAuxStats, weatherAnalysis, ragContext, ctx);
 			// 3. Lead analyst produces the final prediction based on the critique
-			PredictionDetails finalDetails = finalPrediction(initialDetails, critique, ctx);
-			predictions.add(finalDetails.toAirlinePrediction(schedule));
+			var finalAnalysis = finalPrediction(initialAnalysis, critique, ctx);
+			predictions.add(finalAnalysis.toAirlinePrediction(schedule));
 		});
 
 		// Sort by confidence score
@@ -220,14 +218,14 @@ public class DelayPredictCoPilot {
 
 	private PredictionDetails initialPrediction(PredictionRequest request, Airline airline, FlightAuxStats flightAuxStats,
 			WeatherAnalysis weatherAnalysis, String ragContext, OperationContext ctx) {
-		String prompt = String.format(props.getPrompt().getAnalystPrompt(), request.origin(), request.destination(),
+		var prompt = String.format(props.getPrompt().getAnalystPrompt(), request.origin(), request.destination(),
 				airline.getId(), airline.getCode(), airline.getName(),
 				request.travelDate(), request.travelDate().getDayOfWeek(),
 				flightAuxStats.avgDelay(), flightAuxStats.onTimePercentage(), flightAuxStats.totalFlights(),
 				flightAuxStats.cancelRate(), ragContext, weatherAnalysis, flightAuxStats.pastIncidents());
 
 		try {
-			PredictionDetails details = ctx.ai().withAutoLlm()
+			var details = ctx.ai().withAutoLlm()
 					.withSystemPrompt(VIMANA_ANALYST.contribution())
 					.withToolObjects(crewService) // optional, this can be pre-computed as well
 					.createObjectIfPossible(prompt, PredictionDetails.class);
@@ -242,20 +240,20 @@ public class DelayPredictCoPilot {
 		}
 
 		// Fallback to statistical prediction (real world implementation considers more aspects)
-		CrewAnalysis crewAnalysis = crewService.crewAvailability(airline, request.travelDate());
+		var crewAnalysis = crewService.crewAvailability(airline, request.travelDate());
 		return statsPredictionService.createStatisticalPrediction(airline, flightAuxStats, weatherAnalysis, crewAnalysis);
 	}
 
 	private Critique reviewPrediction(PredictionDetails initialDetails, PredictionRequest request, FlightAuxStats flightAuxStats,
 			WeatherAnalysis weatherAnalysis, String ragContext, OperationContext ctx) {
 		try {
-			String predictionJson = objectMapper.writeValueAsString(initialDetails);
-			String critiquePrompt = String.format(props.getPrompt().getCritiquePrompt(),
+			var predictionJson = objectMapper.writeValueAsString(initialDetails);
+			var critiquePrompt = String.format(props.getPrompt().getCritiquePrompt(),
 					request.origin(), request.destination(),
 					flightAuxStats.avgDelay(), flightAuxStats.onTimePercentage(), flightAuxStats.cancelRate(),
 					ragContext, weatherAnalysis, flightAuxStats.pastIncidents(), predictionJson);
 
-			Critique critique = ctx.ai().withAutoLlm()
+			var critique = ctx.ai().withAutoLlm()
 					.withSystemPrompt(VIMANA_SKEPTIC.contribution())
 					.createObjectIfPossible(critiquePrompt, Critique.class);
 
@@ -277,12 +275,12 @@ public class DelayPredictCoPilot {
 		}
 
 		try {
-			String initialJson = objectMapper.writeValueAsString(initialDetails);
-			String critiqueJson = objectMapper.writeValueAsString(critique);
+			var initialJson = objectMapper.writeValueAsString(initialDetails);
+			var critiqueJson = objectMapper.writeValueAsString(critique);
 
-			String finalPrompt = String.format(props.getPrompt().getLeadAnalystPrompt(), initialJson, critiqueJson);
+			var finalPrompt = String.format(props.getPrompt().getLeadAnalystPrompt(), initialJson, critiqueJson);
 
-			PredictionDetails finalDetails = ctx.ai().withAutoLlm()
+			var finalDetails = ctx.ai().withAutoLlm()
 					.withSystemPrompt(VIMANA_LEAD_ANALYST.contribution())
 					.createObjectIfPossible(finalPrompt, PredictionDetails.class);
 
@@ -300,7 +298,7 @@ public class DelayPredictCoPilot {
 	}
 
 	private String recentIncidents(List<Flight> flights) {
-		CharSequence delay = flights.stream()
+		var delay = flights.stream()
 				.filter(f -> f.getDelayMinutes() > props.getDelayMinutes() || f.getStatus() == FlightStatus.DELAYED)
 				.sorted((a, b) -> b.getScheduledDeparture().compareTo(a.getScheduledDeparture()))
 				.limit(props.getDelayLimit())
@@ -310,7 +308,7 @@ public class DelayPredictCoPilot {
 						f.getDelayMinutes(),
 						f.getScheduledDeparture().getDayOfWeek()))
 				.collect(Collectors.joining("; "));
-		CharSequence cancel = flights.stream()
+		var cancel = flights.stream()
 				.filter(f -> (f.getStatus() == (FlightStatus.DIVERTED) || (f.getStatus() == FlightStatus.CANCELLED)))
 				.map(f -> String.format("Departure Date: %s, Status: %s:,  Day of week: %s:",
 						f.getScheduledDeparture().toLocalDate(),

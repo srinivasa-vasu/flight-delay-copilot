@@ -15,7 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
-@Table(name = "flight_embeddings")
+@Table(name = "flight_embedding")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

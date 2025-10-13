@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
 
-@Table(name = "airports")
+@Table(name = "airport")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

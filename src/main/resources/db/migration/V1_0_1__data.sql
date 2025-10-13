@@ -1,4 +1,4 @@
-INSERT INTO airlines (code, name, on_time_performance, total_flights, delayed_flights, average_delay) VALUES
+INSERT INTO airline (code, name, on_time_performance, total_flights, delayed_flights, average_delay) VALUES
 ('AA', 'American Airlines', 78.5, 5000, 1075, 22.3),
 ('DL', 'Delta Air Lines', 82.3, 4800, 850, 18.5),
 ('UA', 'United Airlines', 75.8, 4500, 1080, 25.2),
@@ -10,7 +10,7 @@ INSERT INTO airlines (code, name, on_time_performance, total_flights, delayed_fl
 
 
 -- Insert Airports
-INSERT INTO airports (code, name, city, country, timezone, latitude, longitude, congestion_level, average_delay) VALUES
+INSERT INTO airport (code, name, city, country, timezone, latitude, longitude, congestion_level, average_delay) VALUES
 ('JFK', 'John F. Kennedy International', 'New York', 'USA', 'America/New_York', 40.6413, -73.7781, 8, 28.5),
 ('LAX', 'Los Angeles International', 'Los Angeles', 'USA', 'America/Los_Angeles', 33.9425, -118.4081, 9, 25.3),
 ('ORD', 'O''Hare International', 'Chicago', 'USA', 'America/Chicago', 41.9742, -87.9073, 9, 30.2),
@@ -50,22 +50,22 @@ SELECT
     'Weather conditions for flight operations',
     random() < 0.05,
     floor(random() * 100)::INTEGER
-FROM airports a
+FROM airport a
 CROSS JOIN generate_series(0, 1000) s(i);
 
 
 -- Insert sample crew schedules
-INSERT INTO crew_schedules (crew_id, duty_start, duty_end, flight_hours, rest_hours, base, available, airline_id)
+INSERT INTO crew_schedule (crew_id, duty_start, duty_end, flight_hours, rest_hours, base, available, airline_id)
 SELECT
     'CREW' || a.id || '-' || s.i,
     CURRENT_TIMESTAMP - INTERVAL '7 days' + (s.i || ' days')::INTERVAL,
     CURRENT_TIMESTAMP - INTERVAL '7 days' + (s.i || ' days')::INTERVAL + INTERVAL '12 hours',
     8,
     12,
-    (SELECT code FROM airports ORDER BY random() LIMIT 1),
+    (SELECT code FROM airport ORDER BY random() LIMIT 1),
     random() < 0.9,
     a.id
-FROM airlines a
+FROM airline a
 CROSS JOIN generate_series(1, 1000) s(i);
 
 
@@ -81,9 +81,9 @@ DECLARE
     delay_reason_text VARCHAR(500);
     rand_val text;
 BEGIN
-    FOR airline_rec IN SELECT * FROM airlines LOOP
-        FOR origin_rec IN SELECT * FROM airports LIMIT 5 LOOP
-            FOR dest_rec IN SELECT * FROM airports WHERE id != origin_rec.id LIMIT 3 LOOP
+    FOR airline_rec IN SELECT * FROM airline LOOP
+        FOR origin_rec IN SELECT * FROM airport LIMIT 5 LOOP
+            FOR dest_rec IN SELECT * FROM airport WHERE id != origin_rec.id LIMIT 3 LOOP
                 FOR i IN 0..364 LOOP
                     flight_date := CURRENT_DATE - INTERVAL '365 days' + (i || ' days')::INTERVAL;
 
@@ -113,7 +113,7 @@ BEGIN
 
                     IF delay_min >= 0 THEN
                        rand_val = floor(random() * 10)::TEXT || ' hours';
-                        INSERT INTO flights (
+                        INSERT INTO flight (
                             flight_number, airline_id, origin_id, destination_id,
                             scheduled_departure, actual_departure, scheduled_arrival, actual_arrival,
                             delay_minutes, status, delay_reason, aircraft_type, weather_condition,
@@ -168,14 +168,14 @@ DECLARE
     delay_reason_text VARCHAR(500);
     rand_val text;
 BEGIN
-    FOR airline_rec IN SELECT * FROM airlines LOOP
-        FOR origin_rec IN SELECT * FROM airports LIMIT 5 LOOP
-            FOR dest_rec IN SELECT * FROM airports WHERE id != origin_rec.id LIMIT 3 LOOP
+    FOR airline_rec IN SELECT * FROM airline LOOP
+        FOR origin_rec IN SELECT * FROM airport LIMIT 5 LOOP
+            FOR dest_rec IN SELECT * FROM airport WHERE id != origin_rec.id LIMIT 3 LOOP
                 FOR i IN 0..31 LOOP
                     flight_date := CURRENT_DATE + INTERVAL '30 days' - (i || ' days')::INTERVAL;
                     rand_val := floor(random() * 10)::TEXT || ' hours';
 
-                    INSERT INTO flights (
+                    INSERT INTO flight (
                         flight_number, airline_id, origin_id, destination_id,
                         scheduled_departure, scheduled_arrival,
                         aircraft_type, weather_condition
